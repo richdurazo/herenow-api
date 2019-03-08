@@ -1,13 +1,23 @@
 const path = require('path');
+const fs = require('fs');
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const multer = require('multer');
+require('dotenv').config();
+const helmet = require('helmet')
+const morgan = require('morgan');
+
+const app = express();
 
 const feedRoutes = require('./routes/feed');
 const authRoutes = require('./routes/auth');
-require('dotenv').config();
-const app = express();
+
+const accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {
+    flags: 'a'
+});
+
+
 
 const MONGODB_URI = `mongodb://${process.env.MONGO_USER}:${process.env.MONGO_PASSWORD}@ds331145.mlab.com:31145/${process.env.MONGO_DATABASE}`;
 
@@ -29,6 +39,11 @@ const fileFilter = (req, file, cb) => {
 };
 
 // app.use(bodyParser.urlencoded()); // x-www.form-urlencoded <form>
+
+app.use(helmet())
+app.use(morgan('combined', {
+    stream: accessLogStream
+}))
 
 app.use(bodyParser.json()); //  application/json
 app.use(multer({

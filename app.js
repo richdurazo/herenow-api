@@ -1,3 +1,4 @@
+const serverless = require('serverless-http');
 const path = require('path');
 const fs = require('fs');
 const express = require('express');
@@ -12,10 +13,11 @@ const app = express();
 
 const feedRoutes = require('./routes/feed');
 const authRoutes = require('./routes/auth');
+const connectToDataBase = require('./db')
 
-const accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {
-    flags: 'a'
-});
+// const accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), {
+//     flags: 'a'
+// });
 
 
 
@@ -41,19 +43,19 @@ const fileFilter = (req, file, cb) => {
 // app.use(bodyParser.urlencoded()); // x-www.form-urlencoded <form>
 
 app.use(helmet())
-app.use(morgan('combined', {
-    stream: accessLogStream
-}))
+// app.use(morgan('combined', {
+//     stream: accessLogStream
+// }))
 
 app.use(bodyParser.json()); //  application/json
-app.use(multer({
-    storage: fileStorage,
-    fileFilter: fileFilter
-}).single('image'))
+// app.use(multer({
+//     storage: fileStorage,
+//     fileFilter: fileFilter
+// }).single('image'))
 
 // temp serve static images TODO: store images to s3 bucket
 
-app.use('/images', express.static(path.join(__dirname, 'images')))
+// app.use('/images', express.static(path.join(__dirname, 'images')))
 
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -76,15 +78,28 @@ app.use((error, req, res, next) => {
         data: data
     });
 });
-
-mongoose
-    .connect(MONGODB_URI)
+connectToDataBase()
     .then(result => {
         const server = app.listen(process.env.PORT || 3000);
         const io = require('./socket').init(server);
         io.on('connection', socket => {
             // TODO: client must add for realtime chat feature 
-            console.log('client connected');
-        });
+            console.log('db connected');
+
+        })
     })
     .catch(error => console.log(error))
+
+// mongoose
+//     .connect(MONGODB_URI)
+//     .then(result => {
+//         // const server = app.listen(process.env.PORT || 3000);
+//         // const io = require('./socket').init(server);
+//         // io.on('connection', socket => {
+//         // TODO: client must add for realtime chat feature 
+//         console.log('db connected');
+//         // });
+//     })
+//     .catch(error => console.log(error));
+
+module.exports.handler = serverless(app);

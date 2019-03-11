@@ -1,2 +1,6 @@
 node_modules
 .env
+access.log
+.serverless/
+server.cert
+server.key
